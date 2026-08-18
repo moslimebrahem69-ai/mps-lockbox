@@ -372,7 +372,9 @@ function VaultPage() {
                   <div className="mt-2.5 flex flex-wrap gap-1">
                     <IconAction
                       label={`Open ${link.platform} link`}
-                      onClick={() => window.open(link.url, "_blank", "noopener,noreferrer")}
+                      onClick={() => {
+                        window.open(link.url, "_blank", "noopener,noreferrer");
+                      }}
                     >
                       <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                       Open
