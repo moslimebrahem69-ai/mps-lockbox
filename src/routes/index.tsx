@@ -1,24 +1,235 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Lock, ShieldCheck } from "lucide-react";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { emailSchema } from "@/lib/vault-schema";
+
+const OWNER_KEY = "mps.owner";
+
 export const Route = createFileRoute("/")({
-  component: Index,
+  ssr: false,
+  head: () => ({
+    meta: [
+      { title: "MPS — Moslim Private Store" },
+      { name: "description", content: "MPS private vault. Locked." },
+      { property: "og:title", content: "MPS — Moslim Private Store" },
+      { property: "og:description", content: "MPS private vault. Locked." },
+    ],
+  }),
+  component: LockScreen,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function LockScreen() {
+  const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [setupMode, setSetupMode] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      if (data.session) {
+        navigate({ to: "/vault", replace: true });
+        return;
+      }
+      const stored = window.localStorage.getItem(OWNER_KEY);
+      setOwnerEmail(stored);
+      setSetupMode(!stored);
+      setReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+
+    const targetEmail = setupMode ? email.trim() : (ownerEmail ?? email.trim());
+    const parsedEmail = emailSchema.safeParse(targetEmail);
+    if (!parsedEmail.success) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (pin.length < 6) {
+      setError("Master password must be at least 6 characters.");
+      return;
+    }
+    if (setupMode && pin !== confirmPin) {
+      setError("The two entries do not match.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      if (setupMode) {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: parsedEmail.data,
+          password: pin,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (signUpError) {
+          setError(
+            signUpError.message.toLowerCase().includes("already")
+              ? "This owner already exists. Unlock instead."
+              : "Something went wrong. Please try again.",
+          );
+          return;
+        }
+        if (!data.session) {
+          setError("Confirm the email we sent, then unlock.");
+          return;
+        }
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: parsedEmail.data,
+          password: pin,
+        });
+        if (signInError) {
+          setError("Incorrect password.");
+          return;
+        }
+      }
+      window.localStorage.setItem(OWNER_KEY, parsedEmail.data);
+      setPin("");
+      setConfirmPin("");
+      navigate({ to: "/vault", replace: true });
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="flex min-h-screen items-center justify-center bg-background px-5 py-12">
+      <div className="w-full max-w-sm mps-fade">
+        <div className="flex flex-col items-center text-center">
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-lg border border-border bg-card">
+            <span className="absolute inset-0 rounded-lg border border-accent/40 mps-pulse" />
+            <Lock className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+          </div>
+          <h1 className="mt-5 text-2xl font-semibold tracking-[0.24em] text-foreground">MPS</h1>
+          <p className="mt-1 text-xs tracking-wide text-muted-foreground">
+            {setupMode ? "Set up your private vault" : "MPS Private Vault"}
+          </p>
+        </div>
+
+        {ready ? (
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
+            {setupMode ? (
+              <div className="space-y-2">
+                <Label htmlFor="owner-email" className="text-xs text-muted-foreground">
+                  Owner email
+                </Label>
+                <Input
+                  id="owner-email"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="bg-card"
+                />
+              </div>
+            ) : null}
+
+            <div className="space-y-2">
+              <Label htmlFor="master-pin" className="text-xs text-muted-foreground">
+                {setupMode ? "Master password / PIN" : "Master password"}
+              </Label>
+              <Input
+                id="master-pin"
+                type="password"
+                inputMode="text"
+                autoComplete={setupMode ? "new-password" : "current-password"}
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="••••••"
+                className="bg-card tracking-[0.3em]"
+                autoFocus
+              />
+            </div>
+
+            {setupMode ? (
+              <div className="space-y-2">
+                <Label htmlFor="confirm-pin" className="text-xs text-muted-foreground">
+                  Confirm master password
+                </Label>
+                <Input
+                  id="confirm-pin"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value)}
+                  placeholder="••••••"
+                  className="bg-card tracking-[0.3em]"
+                />
+              </div>
+            ) : null}
+
+            {error ? (
+              <p role="alert" className="text-xs text-destructive">
+                {error}
+              </p>
+            ) : null}
+
+            <Button type="submit" className="w-full" disabled={busy}>
+              {busy ? "Please wait…" : setupMode ? "Create vault" : "Unlock"}
+            </Button>
+
+            <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                Encrypted storage
+              </span>
+              <button
+                type="button"
+                className="underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                onClick={() => {
+                  setError(null);
+                  setSetupMode((prev) => !prev);
+                }}
+              >
+                {setupMode ? "I already have a vault" : "Set up a new vault"}
+              </button>
+            </div>
+
+            {!setupMode && ownerEmail ? (
+              <p className="text-center text-[11px] text-muted-foreground">{ownerEmail}</p>
+            ) : null}
+            {!setupMode && !ownerEmail ? (
+              <div className="space-y-2">
+                <Label htmlFor="unlock-email" className="text-xs text-muted-foreground">
+                  Owner email
+                </Label>
+                <Input
+                  id="unlock-email"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="bg-card"
+                />
+              </div>
+            ) : null}
+          </form>
+        ) : (
+          <div className="mt-10 h-32" aria-hidden="true" />
+        )}
+      </div>
+    </main>
   );
 }
