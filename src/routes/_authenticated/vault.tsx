@@ -3,12 +3,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useMemo, useState } from "react";
 import {
-  Copy,
   ExternalLink,
   Eye,
   EyeOff,
   KeyRound,
   Link2,
+  Mail,
   Pencil,
   Plus,
   Search,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { VaultHeader } from "@/components/vault/vault-header";
 import { PlatformIcon } from "@/components/vault/platform-icon";
+import { CopyAction, VaultAction } from "@/components/vault/copy-button";
 import { AccountDialog, type AccountDraft } from "@/components/vault/account-dialog";
 import { LinkDialog, type LinkDraft } from "@/components/vault/link-dialog";
 import { copyText, friendlyError } from "@/lib/vault-client";
@@ -116,8 +117,8 @@ function VaultPage() {
   const filteredLinks = useMemo(
     () =>
       term
-        ? links.filter(
-            (l) => l.platform.toLowerCase().includes(term) || l.url.toLowerCase().includes(term),
+        ? links.filter((l) =>
+            [l.platform, l.url, l.note ?? ""].some((field) => field.toLowerCase().includes(term)),
           )
         : links,
     [links, term],
@@ -213,7 +214,7 @@ function VaultPage() {
     <div className="min-h-screen bg-background">
       <VaultHeader onLock={() => void lock()} />
 
-      <main className="mx-auto max-w-3xl px-4 pb-16 pt-5 mps-fade">
+      <main className="mps-rise mx-auto max-w-3xl px-4 pb-20 pt-6 sm:px-6">
         <div className="relative">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -222,40 +223,34 @@ function VaultPage() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search accounts and links"
+            placeholder="Search accounts, platforms, notes"
             aria-label="Search vault"
-            className="bg-card pl-9"
+            className="h-11 bg-card pl-9"
           />
         </div>
 
-        <section className="mt-7" aria-labelledby="accounts-heading">
-          <div className="flex items-center justify-between">
-            <h2 id="accounts-heading" className="text-sm font-medium text-foreground">
-              Accounts{" "}
-              <span className="ml-1 text-xs text-muted-foreground">{accounts.length}</span>
-            </h2>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setAccountDialog({ open: true, account: null, password: "" })}
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Add Account
-            </Button>
-          </div>
+        <section className="mt-8" aria-labelledby="accounts-heading">
+          <SectionHeader
+            id="accounts-heading"
+            title="Accounts"
+            count={accounts.length}
+            actionLabel="Add Account"
+            onAction={() => setAccountDialog({ open: true, account: null, password: "" })}
+          />
 
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-2.5">
             {isLoading ? (
-              <p className="text-xs text-muted-foreground">Loading…</p>
+              <SkeletonRows />
             ) : filteredAccounts.length === 0 ? (
               <EmptyState
                 icon={<KeyRound className="h-4 w-4" aria-hidden="true" />}
                 title={term ? "No matching accounts" : "No accounts yet"}
-                hint={term ? "Try another search." : "Add your first private account."}
+                hint={term ? "Try another search." : "Your private accounts will appear here."}
                 action={
                   term ? null : (
                     <Button
                       size="sm"
+                      className="mps-press"
                       onClick={() => setAccountDialog({ open: true, account: null, password: "" })}
                     >
                       Add Account
@@ -267,62 +262,75 @@ function VaultPage() {
               filteredAccounts.map((account) => (
                 <article
                   key={account.id}
-                  className="rounded-md border border-border bg-card px-3 py-3"
+                  className="mps-card mps-rise rounded-lg border border-border bg-card px-3.5 py-3.5"
                 >
-                  <p className="truncate text-sm text-foreground">{account.email}</p>
-                  <p className="mt-1 font-mono text-xs text-muted-foreground">
-                    {revealed[account.id] ?? "••••••••••"}
-                  </p>
-                  <div className="mt-2.5 flex flex-wrap gap-1">
-                    <IconAction
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-border bg-secondary text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-foreground">{account.email}</p>
+                      <p
+                        className={`mt-0.5 font-mono text-xs transition-opacity duration-200 ${
+                          revealed[account.id] ? "text-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        {revealed[account.id] ?? "••••••••••"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <CopyAction
                       label="Copy email"
-                      onClick={() => void copyText(account.email, "Email copied")}
+                      onCopy={() => copyText(account.email, "Email copied")}
                     >
-                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                       Email
-                    </IconAction>
-                    <IconAction
+                    </CopyAction>
+                    <VaultAction
                       label={revealed[account.id] ? "Hide password" : "Show password"}
                       onClick={() => void toggleReveal(account.id)}
+                      icon={
+                        revealed[account.id] ? (
+                          <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+                        ) : (
+                          <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                        )
+                      }
                     >
-                      {revealed[account.id] ? (
-                        <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
-                      ) : (
-                        <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                      )}
                       {revealed[account.id] ? "Hide" : "Show"}
-                    </IconAction>
-                    <IconAction
+                    </VaultAction>
+                    <CopyAction
                       label="Copy password"
-                      onClick={async () => {
+                      onCopy={async () => {
                         const password = await withPassword(account.id);
-                        if (password) await copyText(password, "Password copied", 30_000);
+                        if (!password) return false;
+                        return copyText(password, "Password copied", 30_000);
                       }}
                     >
-                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                       Password
-                    </IconAction>
-                    <IconAction
+                    </CopyAction>
+                    <VaultAction
                       label="Edit account"
+                      icon={<Pencil className="h-3.5 w-3.5" aria-hidden="true" />}
                       onClick={async () => {
                         const password = await withPassword(account.id);
                         if (password === null) return;
                         setAccountDialog({ open: true, account, password });
                       }}
                     >
-                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                       Edit
-                    </IconAction>
-                    <IconAction
+                    </VaultAction>
+                    <VaultAction
                       label="Delete account"
                       destructive
+                      icon={<Trash2 className="h-3.5 w-3.5" aria-hidden="true" />}
                       onClick={() =>
                         setConfirm({ kind: "account", id: account.id, label: account.email })
                       }
                     >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       Delete
-                    </IconAction>
+                    </VaultAction>
                   </div>
                 </article>
               ))
@@ -330,24 +338,18 @@ function VaultPage() {
           </div>
         </section>
 
-        <section className="mt-8" aria-labelledby="links-heading">
-          <div className="flex items-center justify-between">
-            <h2 id="links-heading" className="text-sm font-medium text-foreground">
-              My Links <span className="ml-1 text-xs text-muted-foreground">{links.length}</span>
-            </h2>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setLinkDialog({ open: true, link: null })}
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Add Link
-            </Button>
-          </div>
+        <section className="mt-10" aria-labelledby="links-heading">
+          <SectionHeader
+            id="links-heading"
+            title="My Links"
+            count={links.length}
+            actionLabel="Add Link"
+            onAction={() => setLinkDialog({ open: true, link: null })}
+          />
 
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-2.5">
             {isLoading ? (
-              <p className="text-xs text-muted-foreground">Loading…</p>
+              <SkeletonRows />
             ) : filteredLinks.length === 0 ? (
               <EmptyState
                 icon={<Link2 className="h-4 w-4" aria-hidden="true" />}
@@ -355,7 +357,11 @@ function VaultPage() {
                 hint={term ? "Try another search." : "Add your personal platform links."}
                 action={
                   term ? null : (
-                    <Button size="sm" onClick={() => setLinkDialog({ open: true, link: null })}>
+                    <Button
+                      size="sm"
+                      className="mps-press"
+                      onClick={() => setLinkDialog({ open: true, link: null })}
+                    >
                       Add Link
                     </Button>
                   )
@@ -363,44 +369,51 @@ function VaultPage() {
               />
             ) : (
               filteredLinks.map((link) => (
-                <article key={link.id} className="rounded-md border border-border bg-card px-3 py-3">
-                  <div className="flex items-center gap-2">
-                    <PlatformIcon platform={link.platform} className="h-4 w-4 text-accent" />
-                    <p className="text-sm text-foreground">{link.platform}</p>
+                <article
+                  key={link.id}
+                  className="mps-card mps-rise rounded-lg border border-border bg-card px-3.5 py-3.5"
+                >
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-border bg-secondary text-accent">
+                      <PlatformIcon platform={link.platform} className="h-3.5 w-3.5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-foreground">{link.platform}</p>
+                      {link.note ? (
+                        <p className="truncate text-xs text-muted-foreground">{link.note}</p>
+                      ) : null}
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground/90">{link.url}</p>
+                    </div>
                   </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{link.url}</p>
-                  <div className="mt-2.5 flex flex-wrap gap-1">
-                    <IconAction
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <VaultAction
                       label={`Open ${link.platform} link`}
+                      icon={<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />}
                       onClick={() => {
                         window.open(link.url, "_blank", "noopener,noreferrer");
                       }}
                     >
-                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                       Open
-                    </IconAction>
-                    <IconAction
-                      label="Copy link"
-                      onClick={() => void copyText(link.url, "Link copied")}
-                    >
-                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                    </VaultAction>
+                    <CopyAction label="Copy link" onCopy={() => copyText(link.url, "Link copied")}>
                       Copy
-                    </IconAction>
-                    <IconAction
+                    </CopyAction>
+                    <VaultAction
                       label="Edit link"
+                      icon={<Pencil className="h-3.5 w-3.5" aria-hidden="true" />}
                       onClick={() => setLinkDialog({ open: true, link })}
                     >
-                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                       Edit
-                    </IconAction>
-                    <IconAction
+                    </VaultAction>
+                    <VaultAction
                       label="Delete link"
                       destructive
+                      icon={<Trash2 className="h-3.5 w-3.5" aria-hidden="true" />}
                       onClick={() => setConfirm({ kind: "link", id: link.id, label: link.platform })}
                     >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       Delete
-                    </IconAction>
+                    </VaultAction>
                   </div>
                 </article>
               ))
@@ -412,7 +425,9 @@ function VaultPage() {
       <AccountDialog
         open={accountDialog.open}
         onOpenChange={(open) =>
-          setAccountDialog((prev) => (open ? { ...prev, open } : { open: false, account: null, password: "" }))
+          setAccountDialog((prev) =>
+            open ? { ...prev, open } : { open: false, account: null, password: "" },
+          )
         }
         account={accountDialog.account}
         initialPassword={accountDialog.password}
@@ -422,35 +437,85 @@ function VaultPage() {
 
       <LinkDialog
         open={linkDialog.open}
-        onOpenChange={(open) => setLinkDialog((prev) => (open ? { ...prev, open } : { open: false, link: null }))}
+        onOpenChange={(open) =>
+          setLinkDialog((prev) => (open ? { ...prev, open } : { open: false, link: null }))
+        }
         link={linkDialog.link}
         saving={saving}
         onSave={(draft) => void handleSaveLink(draft)}
       />
 
       <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="mps-appear">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirm?.kind === "link"
-                ? "Are you sure you want to delete this link?"
-                : "Are you sure you want to delete this account?"}
+              {confirm?.kind === "link" ? "Delete this link?" : "Delete this account?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirm?.label} will be permanently removed from your vault.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="mps-press">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => void handleConfirmedDelete()}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="mps-press bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+function SectionHeader({
+  id,
+  title,
+  count,
+  actionLabel,
+  onAction,
+}: {
+  id: string;
+  title: string;
+  count: number;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+      <h2 id={id} className="truncate text-sm font-medium text-foreground">
+        {title}
+        <span className="ml-2 text-xs text-muted-foreground">{count}</span>
+      </h2>
+      <Button size="sm" variant="secondary" className="mps-press shrink-0" onClick={onAction}>
+        <Plus className="h-4 w-4" aria-hidden="true" />
+        {actionLabel}
+      </Button>
+    </div>
+  );
+}
+
+function SkeletonRows() {
+  return (
+    <div className="space-y-2.5" aria-hidden="true">
+      {[0, 1].map((row) => (
+        <div key={row} className="rounded-lg border border-border bg-card px-3.5 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="mps-skeleton h-8 w-8 shrink-0" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="mps-skeleton h-3 w-2/5" />
+              <div className="mps-skeleton h-3 w-1/4" />
+            </div>
+          </div>
+          <div className="mt-3 flex gap-1.5">
+            <div className="mps-skeleton h-8 w-16" />
+            <div className="mps-skeleton h-8 w-16" />
+            <div className="mps-skeleton h-8 w-16" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -467,41 +532,13 @@ function EmptyState({
   action: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-dashed border-border bg-muted/40 px-4 py-8 text-center">
-      <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground">
+    <div className="mps-rise rounded-lg border border-dashed border-border bg-muted/30 px-4 py-10 text-center">
+      <div className="mx-auto grid h-9 w-9 place-items-center rounded-md border border-border bg-card text-muted-foreground">
         {icon}
       </div>
-      <p className="mt-3 text-sm text-foreground">{title}</p>
+      <p className="mt-3.5 text-sm text-foreground">{title}</p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? <div className="mt-5">{action}</div> : null}
     </div>
-  );
-}
-
-function IconAction({
-  label,
-  onClick,
-  destructive,
-  children,
-}: {
-  label: string;
-  onClick: () => void | Promise<void>;
-  destructive?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={() => void onClick()}
-      className={`inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-        destructive
-          ? "text-destructive hover:bg-destructive/10"
-          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
