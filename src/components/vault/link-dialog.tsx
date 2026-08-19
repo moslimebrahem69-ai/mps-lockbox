@@ -18,9 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PlatformIcon } from "@/components/vault/platform-icon";
 import { PLATFORMS, urlSchema, type LinkRow, type Platform } from "@/lib/vault-schema";
 
-export type LinkDraft = { id?: string | undefined; platform: Platform; url: string };
+export type LinkDraft = {
+  id?: string | undefined;
+  platform: Platform;
+  url: string;
+  note: string | null;
+};
 
 export function LinkDialog({
   open,
@@ -37,12 +43,14 @@ export function LinkDialog({
 }) {
   const [platform, setPlatform] = useState<Platform>("LinkedIn");
   const [url, setUrl] = useState("");
+  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setPlatform(link?.platform ?? "LinkedIn");
     setUrl(link?.url ?? "");
+    setNote(link?.note ?? "");
     setError(null);
   }, [open, link]);
 
@@ -53,12 +61,12 @@ export function LinkDialog({
       setError("Please enter a valid URL.");
       return;
     }
-    onSave({ id: link?.id, platform, url: parsed.data });
+    onSave({ id: link?.id, platform, url: parsed.data, note: note.trim() ? note.trim() : null });
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="mps-appear sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{link ? "Edit link" : "Add link"}</DialogTitle>
           <DialogDescription>Only your own platform links.</DialogDescription>
@@ -73,7 +81,10 @@ export function LinkDialog({
               <SelectContent>
                 {PLATFORMS.map((item) => (
                   <SelectItem key={item} value={item}>
-                    {item}
+                    <span className="flex items-center gap-2">
+                      <PlatformIcon platform={item} className="h-3.5 w-3.5 text-muted-foreground" />
+                      {item}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -93,11 +104,25 @@ export function LinkDialog({
             {error ? <p className="text-xs text-destructive">{error}</p> : null}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="link-note">
+              Note <span className="text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              id="link-note"
+              value={note}
+              maxLength={200}
+              placeholder="Add a note (optional)"
+              onChange={(e) => setNote(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="ghost" className="mps-press" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" className="mps-press" disabled={saving}>
               {saving ? "Saving…" : "Save Link"}
             </Button>
           </DialogFooter>

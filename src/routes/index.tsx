@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Lock, ShieldCheck } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { emailSchema } from "@/lib/vault-schema";
+import { MpsMark } from "@/components/vault/mps-logo";
 
 const OWNER_KEY = "mps.owner";
 
@@ -114,15 +114,15 @@ function LockScreen() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-5 py-12">
-      <div className="w-full max-w-sm mps-fade">
+      <div className="mps-appear w-full max-w-sm">
         <div className="flex flex-col items-center text-center">
-          <div className="relative flex h-14 w-14 items-center justify-center rounded-lg border border-border bg-card">
-            <span className="absolute inset-0 rounded-lg border border-accent/40 mps-pulse" />
-            <Lock className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
-          </div>
-          <h1 className="mt-5 text-2xl font-semibold tracking-[0.24em] text-foreground">MPS</h1>
-          <p className="mt-1 text-xs tracking-wide text-muted-foreground">
-            {setupMode ? "Set up your private vault" : "MPS Private Vault"}
+          <MpsMark className="h-14 w-14" />
+          <h1 className="mt-5 text-2xl font-semibold tracking-[0.28em] text-foreground">MPS</h1>
+          <p className="mt-1.5 text-[11px] tracking-wide text-muted-foreground">
+            Moslim Private Store
+          </p>
+          <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-muted-foreground/80">
+            {setupMode ? "Set up your vault" : "Private Vault"}
           </p>
         </div>
 
@@ -185,15 +185,11 @@ function LockScreen() {
               </p>
             ) : null}
 
-            <Button type="submit" className="w-full" disabled={busy}>
-              {busy ? "Please wait…" : setupMode ? "Create vault" : "Unlock"}
+            <Button type="submit" className="mps-press h-11 w-full" disabled={busy}>
+              {busy ? "Please wait…" : setupMode ? "Create vault" : "Unlock Vault"}
             </Button>
 
-            <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                Encrypted storage
-              </span>
+            <div className="flex items-center justify-center pt-1 text-xs text-muted-foreground">
               <button
                 type="button"
                 className="underline-offset-4 transition-colors hover:text-foreground hover:underline"
@@ -229,6 +225,9 @@ function LockScreen() {
         ) : (
           <div className="mt-10 h-32" aria-hidden="true" />
         )}
+        <p className="mt-10 text-center text-[10px] uppercase tracking-[0.24em] text-muted-foreground/70">
+          Private • Secure • Personal
+        </p>
       </div>
     </main>
   );

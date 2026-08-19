@@ -3,6 +3,7 @@ import { z } from "zod";
 export const PLATFORMS = [
   "LinkedIn",
   "Facebook",
+  "Instagram",
   "TikTok",
   "Telegram",
   "GitHub",
@@ -40,10 +41,19 @@ export const accountInputSchema = z.object({
   label: z.string().trim().max(80).optional().nullable(),
 });
 
+export const noteSchema = z
+  .string()
+  .trim()
+  .max(200, { message: "Note is too long." })
+  .optional()
+  .nullable()
+  .transform((value) => (value ? value : null));
+
 export const linkInputSchema = z.object({
   id: z.string().uuid().optional(),
   platform: platformSchema,
   url: urlSchema,
+  note: noteSchema,
 });
 
 export type AccountRow = {
@@ -57,6 +67,7 @@ export type LinkRow = {
   id: string;
   platform: Platform;
   url: string;
+  note: string | null;
   created_at: string;
 };
 
