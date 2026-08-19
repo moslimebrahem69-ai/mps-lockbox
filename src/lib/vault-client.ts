@@ -20,6 +20,7 @@ export async function copyText(value: string, message: string, clearAfterMs?: nu
 export const PLATFORM_HINT: Record<Platform, string> = {
   LinkedIn: "linkedin.com/in/…",
   Facebook: "facebook.com/…",
+  Instagram: "instagram.com/…",
   TikTok: "tiktok.com/@…",
   Telegram: "t.me/…",
   GitHub: "github.com/…",

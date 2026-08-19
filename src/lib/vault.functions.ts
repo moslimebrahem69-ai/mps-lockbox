@@ -14,7 +14,7 @@ export const getVault = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false }),
       context.supabase
         .from("links")
-        .select("id, platform, url, created_at")
+        .select("id, platform, url, note, created_at")
         .order("created_at", { ascending: false }),
     ]);
     if (accounts.error || links.error) throw new Error("Something went wrong. Please try again.");
@@ -71,7 +71,12 @@ export const saveLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => linkInputSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const payload = { platform: data.platform, url: data.url, user_id: context.userId };
+    const payload = {
+      platform: data.platform,
+      url: data.url,
+      note: data.note ?? null,
+      user_id: context.userId,
+    };
     const query = data.id
       ? context.supabase.from("links").update(payload).eq("id", data.id)
       : context.supabase.from("links").insert(payload);
