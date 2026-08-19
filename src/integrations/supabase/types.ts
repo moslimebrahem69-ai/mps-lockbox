@@ -48,6 +48,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          note: string | null
           platform: string
           updated_at: string
           url: string
@@ -56,6 +57,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          note?: string | null
           platform: string
           updated_at?: string
           url: string
@@ -64,6 +66,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          note?: string | null
           platform?: string
           updated_at?: string
           url?: string
