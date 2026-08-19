@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 /** Compact MPS mark: an "M" monogram set in a vault plate with a dial. */
-export function MpsMark({ className }: { className?: string }) {
+export function MpsMark({ className }: { className?: string | undefined }) {
   return (
     <svg
       viewBox="0 0 64 64"
