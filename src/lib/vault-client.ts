@@ -3,7 +3,11 @@ import { toast } from "sonner";
 import type { Platform } from "./vault-schema";
 
 /** Copies text without ever logging it. */
-export async function copyText(value: string, message: string, clearAfterMs?: number) {
+export async function copyText(
+  value: string,
+  message: string,
+  clearAfterMs?: number,
+): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(value);
     toast.success(message);
@@ -12,8 +16,10 @@ export async function copyText(value: string, message: string, clearAfterMs?: nu
         navigator.clipboard.writeText("").catch(() => undefined);
       }, clearAfterMs);
     }
+    return true;
   } catch {
     toast.error("Couldn't copy. Please try again.");
+    return false;
   }
 }
 
