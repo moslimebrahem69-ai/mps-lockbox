@@ -59,7 +59,7 @@ export function AccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="mps-appear sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{account ? "Edit account" : "Add account"}</DialogTitle>
           <DialogDescription>Stored encrypted in your private vault.</DialogDescription>
@@ -118,10 +118,10 @@ export function AccountDialog({
           </div>
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="ghost" className="mps-press" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" className="mps-press" disabled={saving}>
               {saving ? "Saving…" : "Save Account"}
             </Button>
           </DialogFooter>
