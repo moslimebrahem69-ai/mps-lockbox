@@ -245,3 +245,181 @@
     }
   }
 }
+
+/* ---- Premium motion system ---- */
+
+@keyframes mps-logo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes mps-stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes mps-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes mps-card-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}
+
+@keyframes mps-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes mps-seal {
+  0% {
+    opacity: 1;
+    transform: none;
+  }
+  45% {
+    opacity: 1;
+    transform: scale(0.975);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes mps-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes mps-glow {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Entrance helpers. Pair with style={{ animationDelay }} for stagger. */
+@utility mps-logo-in {
+  animation: mps-logo-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility mps-stage {
+  animation: mps-stage-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility mps-stage-down {
+  animation: mps-stage-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-name: mps-stage-in;
+}
+
+@utility mps-card-in {
+  animation: mps-card-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility mps-card-out {
+  animation: mps-card-out 220ms cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+@utility mps-shake {
+  animation: mps-shake 380ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@utility mps-seal {
+  animation: mps-seal 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@utility mps-breathe {
+  animation: mps-breathe 3.4s ease-in-out infinite;
+}
+
+@utility mps-glow {
+  animation: mps-glow 2.8s ease-in-out infinite;
+}
+
+@utility mps-page {
+  animation: mps-stage-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility mps-icon-shift {
+  & svg {
+    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover svg {
+      transform: translateX(1.5px) translateY(-1.5px);
+    }
+  }
+}
+
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    .mps-breathe,
+    .mps-glow,
+    .mps-shake,
+    .mps-seal,
+    .mps-logo-in,
+    .mps-card-in,
+    .mps-card-out,
+    .mps-stage,
+    .mps-page {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      filter: none !important;
+    }
+  }
+}
