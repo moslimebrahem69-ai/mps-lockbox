@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SaveButton } from "@/components/vault/save-button";
 import { emailSchema, passwordStrength, type AccountRow } from "@/lib/vault-schema";
 
 export type AccountDraft = { id?: string | undefined; email: string; password: string };
@@ -22,6 +23,7 @@ export function AccountDialog({
   account,
   initialPassword,
   saving,
+  saved,
   onSave,
 }: {
   open: boolean;
@@ -29,6 +31,7 @@ export function AccountDialog({
   account: AccountRow | null;
   initialPassword: string;
   saving: boolean;
+  saved: boolean;
   onSave: (draft: AccountDraft) => void;
 }) {
   const [email, setEmail] = useState("");
@@ -59,7 +62,7 @@ export function AccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="mps-appear sm:max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{account ? "Edit account" : "Add account"}</DialogTitle>
           <DialogDescription>Stored encrypted in your private vault.</DialogDescription>
@@ -74,8 +77,12 @@ export function AccountDialog({
               placeholder="Enter Gmail address"
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="off"
+              aria-invalid={errors.email ? true : undefined}
+              className={errors.email ? "border-destructive" : undefined}
             />
-            {errors.email ? <p className="text-xs text-destructive">{errors.email}</p> : null}
+            {errors.email ? (
+              <p className="mps-stage text-xs text-destructive">{errors.email}</p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
@@ -94,21 +101,23 @@ export function AccountDialog({
                 type="button"
                 onClick={() => setVisible((v) => !v)}
                 aria-label={visible ? "Hide password" : "Show password"}
-                className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors duration-150 hover:text-foreground"
               >
                 {visible ? (
-                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  <EyeOff className="mps-stage h-4 w-4" aria-hidden="true" />
                 ) : (
-                  <Eye className="h-4 w-4" aria-hidden="true" />
+                  <Eye className="mps-stage h-4 w-4" aria-hidden="true" />
                 )}
               </button>
             </div>
-            {errors.password ? <p className="text-xs text-destructive">{errors.password}</p> : null}
+            {errors.password ? (
+              <p className="mps-stage text-xs text-destructive">{errors.password}</p>
+            ) : null}
             {password ? (
               <div className="flex items-center gap-2">
                 <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-accent transition-all"
+                    className="h-full rounded-full bg-accent transition-[width] duration-300 ease-out"
                     style={{ width: `${(strength.score / 5) * 100}%` }}
                   />
                 </div>
@@ -118,12 +127,15 @@ export function AccountDialog({
           </div>
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button type="button" variant="ghost" className="mps-press" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mps-press"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" className="mps-press" disabled={saving}>
-              {saving ? "Saving…" : "Save Account"}
-            </Button>
+            <SaveButton saving={saving} saved={saved} label="Save Account" />
           </DialogFooter>
         </form>
       </DialogContent>

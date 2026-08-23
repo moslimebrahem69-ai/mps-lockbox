@@ -6,10 +6,10 @@ import { MpsLogo } from "@/components/vault/mps-logo";
 
 export function VaultHeader({ onLock }: { onLock: () => void }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-md">
+    <header className="mps-stage-down sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-md">
       <div className="mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:px-6">
-        <Link to="/vault" aria-label="MPS vault" className="min-w-0">
-          <MpsLogo markClassName="h-8 w-8" />
+        <Link to="/vault" aria-label="MPS vault" className="group min-w-0">
+          <MpsLogo markClassName="h-8 w-8 transition-transform duration-200 group-hover:scale-105" />
         </Link>
         <div className="flex shrink-0 items-center gap-1.5">
           <Button

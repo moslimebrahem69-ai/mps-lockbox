@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PlatformIcon } from "@/components/vault/platform-icon";
+import { SaveButton } from "@/components/vault/save-button";
+import { PLATFORM_HINT } from "@/lib/vault-client";
 import { PLATFORMS, urlSchema, type LinkRow, type Platform } from "@/lib/vault-schema";
 
 export type LinkDraft = {
@@ -33,12 +35,14 @@ export function LinkDialog({
   onOpenChange,
   link,
   saving,
+  saved,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   link: LinkRow | null;
   saving: boolean;
+  saved: boolean;
   onSave: (draft: LinkDraft) => void;
 }) {
   const [platform, setPlatform] = useState<Platform>("LinkedIn");
@@ -66,7 +70,7 @@ export function LinkDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="mps-appear sm:max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{link ? "Edit link" : "Add link"}</DialogTitle>
           <DialogDescription>Only your own platform links.</DialogDescription>
@@ -96,12 +100,17 @@ export function LinkDialog({
             <Input
               id="link-url"
               value={url}
-              placeholder="Paste your link here"
-              onChange={(e) => setUrl(e.target.value)}
+              placeholder={PLATFORM_HINT[platform]}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                if (error) setError(null);
+              }}
               inputMode="url"
               autoComplete="off"
+              aria-invalid={error ? true : undefined}
+              className={error ? "border-destructive" : undefined}
             />
-            {error ? <p className="text-xs text-destructive">{error}</p> : null}
+            {error ? <p className="mps-stage text-xs text-destructive">{error}</p> : null}
           </div>
 
           <div className="space-y-2">
@@ -112,19 +121,22 @@ export function LinkDialog({
               id="link-note"
               value={note}
               maxLength={200}
-              placeholder="Add a note (optional)"
+              placeholder="Personal account, main portfolio…"
               onChange={(e) => setNote(e.target.value)}
               autoComplete="off"
             />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button type="button" variant="ghost" className="mps-press" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mps-press"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" className="mps-press" disabled={saving}>
-              {saving ? "Saving…" : "Save Link"}
-            </Button>
+            <SaveButton saving={saving} saved={saved} label="Save Link" />
           </DialogFooter>
         </form>
       </DialogContent>
