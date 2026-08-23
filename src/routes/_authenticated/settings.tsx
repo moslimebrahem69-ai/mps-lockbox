@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Clock, KeyRound, ShieldAlert, ShieldCheck, Vault } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -133,7 +133,7 @@ function SettingsPage() {
     <div className="min-h-screen bg-background">
       <VaultHeader onLock={() => void lock()} />
 
-      <main className="mx-auto max-w-3xl space-y-8 px-4 pb-16 pt-5 mps-fade">
+      <main className="mps-page mx-auto max-w-3xl space-y-9 px-4 pb-16 pt-5">
         <Link
           to="/vault"
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
@@ -143,14 +143,27 @@ function SettingsPage() {
         </Link>
 
         <section aria-labelledby="security-heading" className="space-y-4">
-          <h2 id="security-heading" className="text-sm font-medium text-foreground">
-            Security
-          </h2>
+          <div className="border-b border-border pb-2.5">
+            <h2
+              id="security-heading"
+              className="inline-flex items-center gap-2 text-sm font-medium text-foreground"
+            >
+              <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
+              Security
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Master password, auto-lock and locking the vault.
+            </p>
+          </div>
           <form
             onSubmit={changeMaster}
-            className="space-y-3 rounded-md border border-border bg-card p-4"
+            className="mps-card space-y-3 rounded-lg border border-border bg-card p-4"
             noValidate
           >
+            <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
+              Change master password
+            </p>
             <div className="space-y-2">
               <Label htmlFor="current-master">Current master password</Label>
               <Input
@@ -189,7 +202,7 @@ function SettingsPage() {
               </p>
             ) : null}
             <div className="flex flex-wrap gap-2 pt-1">
-              <Button type="submit" size="sm" disabled={busy}>
+              <Button type="submit" size="sm" className="mps-press" disabled={busy}>
                 {busy ? "Saving…" : "Change master password"}
               </Button>
               <Button type="button" size="sm" variant="secondary" onClick={() => void lock()}>
@@ -198,9 +211,10 @@ function SettingsPage() {
             </div>
           </form>
 
-          <div className="rounded-md border border-border bg-card p-4">
-            <Label htmlFor="session-timeout" className="text-sm">
-              Session timeout
+          <div className="mps-card rounded-lg border border-border bg-card p-4">
+            <Label htmlFor="session-timeout" className="inline-flex items-center gap-2 text-sm">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+              Auto lock
             </Label>
             <p className="mt-1 text-xs text-muted-foreground">
               The vault locks automatically after this many minutes of inactivity.
@@ -223,15 +237,22 @@ function SettingsPage() {
         </section>
 
         <section aria-labelledby="vault-heading" className="space-y-3">
-          <h2 id="vault-heading" className="text-sm font-medium text-foreground">
-            Vault
-          </h2>
+          <div className="border-b border-border pb-2.5">
+            <h2
+              id="vault-heading"
+              className="inline-flex items-center gap-2 text-sm font-medium text-foreground"
+            >
+              <Vault className="h-4 w-4 text-accent" aria-hidden="true" />
+              Vault
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">What is stored right now.</p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-md border border-border bg-card p-4">
+            <div className="mps-card rounded-lg border border-border bg-card p-4">
               <p className="text-xs text-muted-foreground">Accounts</p>
               <p className="mt-1 text-xl text-foreground">{data?.accounts.length ?? 0}</p>
             </div>
-            <div className="rounded-md border border-border bg-card p-4">
+            <div className="mps-card rounded-lg border border-border bg-card p-4">
               <p className="text-xs text-muted-foreground">Saved links</p>
               <p className="mt-1 text-xl text-foreground">{data?.links.length ?? 0}</p>
             </div>
@@ -239,10 +260,17 @@ function SettingsPage() {
         </section>
 
         <section aria-labelledby="danger-heading" className="space-y-3">
-          <h2 id="danger-heading" className="text-sm font-medium text-destructive">
-            Danger Zone
-          </h2>
-          <div className="rounded-md border border-destructive/40 bg-card p-4">
+          <div className="border-b border-destructive/30 pb-2.5">
+            <h2
+              id="danger-heading"
+              className="inline-flex items-center gap-2 text-sm font-medium text-destructive"
+            >
+              <ShieldAlert className="h-4 w-4" aria-hidden="true" />
+              Danger Zone
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">Irreversible actions.</p>
+          </div>
+          <div className="mps-card rounded-lg border border-destructive/40 bg-card p-4">
             <p className="text-sm text-foreground">Delete all vault data</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Permanently removes every saved account and link. This cannot be undone.
