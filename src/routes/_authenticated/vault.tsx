@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ExternalLink,
   Eye,
+  ShieldCheck,
   EyeOff,
   KeyRound,
   Link2,
@@ -35,6 +36,7 @@ import { CopyAction, VaultAction } from "@/components/vault/copy-button";
 import { AccountDialog, type AccountDraft } from "@/components/vault/account-dialog";
 import { LinkDialog, type LinkDraft } from "@/components/vault/link-dialog";
 import { copyText, friendlyError } from "@/lib/vault-client";
+import { cn } from "@/lib/utils";
 import type { AccountRow, LinkRow } from "@/lib/vault-schema";
 import {
   deleteAccount,
@@ -78,6 +80,9 @@ function VaultPage() {
 
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [removing, setRemoving] = useState<Record<string, true>>({});
+  const searchRef = useRef<HTMLInputElement | null>(null);
   const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [accountDialog, setAccountDialog] = useState<{
     open: boolean;
@@ -106,6 +111,18 @@ function VaultPage() {
     }, [lock]),
   );
 
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const accounts = data?.accounts ?? [];
   const links = data?.links ?? [];
 
@@ -132,9 +149,13 @@ function VaultPage() {
     setSaving(true);
     try {
       await persistAccount({ data: draft });
-      setAccountDialog({ open: false, account: null, password: "" });
       await refresh();
+      setSaved(true);
       toast.success(draft.id ? "Account updated" : "Account saved");
+      window.setTimeout(() => {
+        setAccountDialog({ open: false, account: null, password: "" });
+        setSaved(false);
+      }, 480);
     } catch (error) {
       toast.error(friendlyError(error));
     } finally {
@@ -146,9 +167,13 @@ function VaultPage() {
     setSaving(true);
     try {
       await persistLink({ data: draft });
-      setLinkDialog({ open: false, link: null });
       await refresh();
+      setSaved(true);
       toast.success(draft.id ? "Link updated" : "Link saved");
+      window.setTimeout(() => {
+        setLinkDialog({ open: false, link: null });
+        setSaved(false);
+      }, 480);
     } catch (error) {
       toast.error(friendlyError(error));
     } finally {
@@ -160,6 +185,8 @@ function VaultPage() {
     if (!confirm) return;
     const target = confirm;
     setConfirm(null);
+    setRemoving((prev) => ({ ...prev, [target.id]: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 220));
     try {
       if (target.kind === "account") {
         await removeAccount({ data: { id: target.id } });
@@ -175,6 +202,12 @@ function VaultPage() {
       toast.success("Deleted");
     } catch (error) {
       toast.error(friendlyError(error));
+    } finally {
+      setRemoving((prev) => {
+        const next = { ...prev };
+        delete next[target.id];
+        return next;
+      });
     }
   }
 
@@ -214,22 +247,35 @@ function VaultPage() {
     <div className="min-h-screen bg-background">
       <VaultHeader onLock={() => void lock()} />
 
-      <main className="mps-rise mx-auto max-w-3xl px-4 pb-20 pt-6 sm:px-6">
-        <div className="relative">
+      <main className="mps-page mx-auto max-w-3xl px-4 pb-20 pt-6 sm:px-6">
+        <div className="mps-stage flex items-center justify-between gap-3">
+          <p className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 text-success" aria-hidden="true" />
+            Vault unlocked
+          </p>
+          <p className="hidden text-[11px] text-muted-foreground sm:block">
+            Press <kbd className="rounded border border-border px-1 py-0.5 text-[10px]">⌘</kbd>
+            <kbd className="ml-0.5 rounded border border-border px-1 py-0.5 text-[10px]">K</kbd> to
+            search
+          </p>
+        </div>
+
+        <div className="mps-stage group relative mt-4" style={{ animationDelay: "60ms" }}>
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors duration-200 group-focus-within:text-accent"
             aria-hidden="true"
           />
           <Input
+            ref={searchRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search accounts, platforms, notes"
             aria-label="Search vault"
-            className="h-11 bg-card pl-9"
+            className="h-11 bg-card pl-9 focus-visible:border-accent/50"
           />
         </div>
 
-        <section className="mt-8" aria-labelledby="accounts-heading">
+        <section className="mps-stage mt-8" style={{ animationDelay: "120ms" }} aria-labelledby="accounts-heading">
           <SectionHeader
             id="accounts-heading"
             title="Accounts"
@@ -259,10 +305,14 @@ function VaultPage() {
                 }
               />
             ) : (
-              filteredAccounts.map((account) => (
+              filteredAccounts.map((account, index) => (
                 <article
                   key={account.id}
-                  className="mps-card mps-rise rounded-lg border border-border bg-card px-3.5 py-3.5"
+                  style={{ animationDelay: removing[account.id] ? undefined : `${index * 45}ms` }}
+                  className={cn(
+                    "mps-card rounded-lg border border-border bg-card px-3.5 py-3.5",
+                    removing[account.id] ? "mps-card-out" : "mps-card-in",
+                  )}
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-border bg-secondary text-muted-foreground">
@@ -338,7 +388,7 @@ function VaultPage() {
           </div>
         </section>
 
-        <section className="mt-10" aria-labelledby="links-heading">
+        <section className="mps-stage mt-10" style={{ animationDelay: "200ms" }} aria-labelledby="links-heading">
           <SectionHeader
             id="links-heading"
             title="My Links"
@@ -368,10 +418,14 @@ function VaultPage() {
                 }
               />
             ) : (
-              filteredLinks.map((link) => (
+              filteredLinks.map((link, index) => (
                 <article
                   key={link.id}
-                  className="mps-card mps-rise rounded-lg border border-border bg-card px-3.5 py-3.5"
+                  style={{ animationDelay: removing[link.id] ? undefined : `${index * 45}ms` }}
+                  className={cn(
+                    "mps-card rounded-lg border border-border bg-card px-3.5 py-3.5",
+                    removing[link.id] ? "mps-card-out" : "mps-card-in",
+                  )}
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-border bg-secondary text-accent">
@@ -388,6 +442,7 @@ function VaultPage() {
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     <VaultAction
+                      className="mps-icon-shift"
                       label={`Open ${link.platform} link`}
                       icon={<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />}
                       onClick={() => {
@@ -432,6 +487,7 @@ function VaultPage() {
         account={accountDialog.account}
         initialPassword={accountDialog.password}
         saving={saving}
+        saved={saved}
         onSave={(draft) => void handleSaveAccount(draft)}
       />
 
@@ -442,6 +498,7 @@ function VaultPage() {
         }
         link={linkDialog.link}
         saving={saving}
+        saved={saved}
         onSave={(draft) => void handleSaveLink(draft)}
       />
 
@@ -533,7 +590,7 @@ function EmptyState({
 }) {
   return (
     <div className="mps-rise rounded-lg border border-dashed border-border bg-muted/30 px-4 py-10 text-center">
-      <div className="mx-auto grid h-9 w-9 place-items-center rounded-md border border-border bg-card text-muted-foreground">
+      <div className="mps-breathe mx-auto grid h-9 w-9 place-items-center rounded-md border border-border bg-card text-muted-foreground">
         {icon}
       </div>
       <p className="mt-3.5 text-sm text-foreground">{title}</p>
